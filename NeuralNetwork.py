@@ -8,5 +8,9 @@ class NeuralNetwork:
         self.biases = [np.random.randn(size, 1) for size in sizes[1:]]
         self.weights = [np.random.randn(size, x) for x, size in zip(size[:-1], sizes[1:])]
 
-    
+
+            
+
+def sigmoid(self, z):
+        return 1. / (1. + np.exp(-z))
 

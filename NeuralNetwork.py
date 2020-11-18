@@ -15,7 +15,7 @@ class NeuralNetwork:
             a = sigmoid(w.dot(a) + b)
         return a
 
-    def train(self, data, epochs, mini_batch_size, eta, test_data=None):
+    def train(self, data, epochs, mini_batch_size, eta, test_data=None, with_cost=False):
         '''Trains NN using stochastic gradient descent'''
         n = len(data)
         if test_data:
@@ -28,7 +28,10 @@ class NeuralNetwork:
             for mini_batch in mini_batches:
                 self.update_mini_batch(mini_batch, eta)
             if test_data:
-                print(f'Epoch {e+1}: {self.evaluate(test_data)} / {num_tests}')
+                correct, cost = self.evaluate(test_data, with_cost)
+                print(f'Epoch {e+1}: {correct} / {num_tests}')
+                if with_cost:
+                    print(f'   cost: + {cost}')
             else:
                 print(f'Epoch {e+1} completed')
         
@@ -74,12 +77,17 @@ class NeuralNetwork:
             nabla_w[-l] = delta.dot(activations[-l-1].T)
         return nabla_b, nabla_w
 
-    def evaluate(self, test_data):
-        res = [(np.argmax(self.feed_forward(x)), y) for (x, y) in test_data]
-        return sum(int(x == y) for (x, y) in res)
+    def evaluate(self, test_data, with_cost=False):      
+        res = [(np.argmax(self.feed_forward(x)), y) for x, y in test_data]
+        cost = None
+        if with_cost:
+            cost = 0
+            for yhat, y in res:
+                cost += (y - yhat)**2
+        return sum(int(x == y) for (x, y) in res), cost / (2*len(test_data))
 
     def predict(self, xs):
-        res = [(np.argmax(self.feedforward(x)), y) for (x, y) in xs]
+        res = [(np.argmax(self.feedforward(x)), y) for x, y in xs]
         return res
             
 

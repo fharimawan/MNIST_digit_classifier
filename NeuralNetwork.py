@@ -6,34 +6,44 @@ class NeuralNetwork:
     def __init__(self, sizes):
         self.nlayers = len(sizes)
         self.sizes = sizes
-        self.biases = [np.random.randn(size, 1) for size in sizes[1:]]
-        self.weights = [np.random.randn(size, x) for x, size in zip(size[:-1], sizes[1:])]
+        # initialize weights and biases randomly with appropriate sizes
+        self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
+        self.weights = [np.random.randn(y, x) for x, y in zip(sizes[:-1], sizes[1:])]
 
     def feed_forward(self, a):
         for w, b in zip(self.weights, self.biases):
             a = sigmoid(w.dot(a) + b)
         return a
 
-    def train(self, data, epochs, mini_batch_size, eta):
+    def train(self, data, epochs, mini_batch_size, eta, test_data=None):
         '''Trains NN using stochastic gradient descent'''
         n = len(data)
+        if test_data:
+            num_tests = len(test_data)
+
         for e in xrange(epochs):
             # split data into mini batches
             np.random.shuffle(data)
             mini_batches = [data[batch: batch + mini_batch_size] for batch in xrange(0, n, mini_batch_size)]
             for mini_batch in mini_batches:
                 self.update_mini_batch(mini_batch, eta)
-            print(f'epoch {e}/{epochs} complete...')
-        print('Finished')
+            if test_data:
+                print(f'Epoch {e+1}: {self.evaluate(test_data)} / {num_tests}')
+            else:
+                print(f'Epoch {e+1} completed')
+        
 
     def update_mini_batch(self, mini_batch, eta):
+        # init bias and weight gradients with zero vector in appropriate shape
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
-        # for each data point compute the gradient and sum it
+
+        # for each datum compute the gradient and sum it
         for x, y in mini_batch:
             delta_nabla_b, delta_nabla_w = self.back_prop(x, y)
             nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
+
         # update weights and biases by making a gradient step in the direction of the summed gradients
         self.biases = [b - nb * (eta / len(mini_batch)) for b, nb in zip(self.biases, nabla_b)]
         self.weights = [w - nw * (eta / len(mini_batch)) for w, nw in zip(self.weights, nabla_w)]
@@ -44,6 +54,7 @@ class NeuralNetwork:
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
 
+        # compute forward pass and store the responses (z) and activations AKA logistic responses (a)
         a = x
         activations = [x]
         zs = []
@@ -53,17 +64,27 @@ class NeuralNetwork:
             a = sigmoid(z)
             activations.append(a)
 
-        delta = (activations - y) * sigmoid_prime(zs[-1])
+        # compute backwards pass
+        delta = (activations[-1] - y) * sigmoid_prime(zs[-1])
         nabla_b[-1] = delta
         nabla_w[-1] = delta.dot(activations[-2].T)
-        for l in xrange(2, self.nlayers):
+        for l in range(2, self.nlayers):
             delta = self.weights[-l+1].T.dot(delta) * sigmoid_prime(zs[-l])
             nabla_b[-l] = delta
             nabla_w[-l] = delta.dot(activations[-l-1].T)
         return nabla_b, nabla_w
 
-def sigmoid(self, z):
+    def evaluate(self, test_data):
+        res = [(np.argmax(self.feed_forward(x)), y) for (x, y) in test_data]
+        return sum(int(x == y) for (x, y) in res)
+
+    def predict(self, xs):
+        res = [(np.argmax(self.feedforward(x)), y) for (x, y) in xs]
+        return res
+            
+
+def sigmoid(z):
         return 1. / (1. + np.exp(-z))
 
-def sigmoid_prime(self, z):
-    return sigmoid(z) * (1 - sigmoid(z))
+def sigmoid_prime(z):
+    return sigmoid(z) * (1. - sigmoid(z))

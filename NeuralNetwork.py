@@ -31,7 +31,7 @@ class NeuralNetwork:
                 correct, cost = self.evaluate(test_data, with_cost)
                 print(f'Epoch {e+1}: {correct} / {num_tests}')
                 if with_cost:
-                    print(f'   cost: + {cost}')
+                    print(f'          {cost}')
             else:
                 print(f'Epoch {e+1} completed')
         
